@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.env/
+.venv/
+venv/
+results/raw/*.csv
+results/plots/*.png
+*.out
+*.err
+.DS_Store
