@@ -1,10 +1,22 @@
+# Python
 __pycache__/
 *.pyc
-.env/
+*.pyo
+*.pyd
 .venv/
 venv/
-results/raw/*.csv
-results/plots/*.png
+env/
+
+# Logs
+logs/
 *.out
 *.err
+
+# Cluster-specific scripts
+run_experiment.sh
+run_all_seeds.sh
+
+# OS/editor files
 .DS_Store
+.vscode/
+.idea/

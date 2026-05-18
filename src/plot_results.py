@@ -48,25 +48,44 @@ def plot_ppo_vs_baseline(raw_dir, plots_dir, baseline_path):
         raise FileNotFoundError("No PPO evaluation CSV files found.")
 
     ppo_df = pd.concat([pd.read_csv(f) for f in eval_files], ignore_index=True)
-    ppo_summary = ppo_df.groupby("step")["eval_return"].mean().reset_index()
+
+    ppo_summary = (
+        ppo_df.groupby("step")["eval_return"]
+        .agg(["mean", "std"])
+        .reset_index()
+    )
+    ppo_summary["std"] = ppo_summary["std"].fillna(0.0)
 
     baseline_df = pd.read_csv(baseline_path)
 
     plt.figure()
-    plt.plot(ppo_summary["step"], ppo_summary["eval_return"], label="PPO")
 
-    # Try to infer common baseline column names.
-    step_candidates = ["step", "steps", "env_steps", "environment_steps", "timesteps"]
-    return_candidates = ["return", "reward", "eval_return", "mean_return", "episode_return"]
+    plt.plot(
+        ppo_summary["step"],
+        ppo_summary["mean"],
+        label="PPO mean"
+    )
+    plt.fill_between(
+        ppo_summary["step"],
+        ppo_summary["mean"] - ppo_summary["std"],
+        ppo_summary["mean"] + ppo_summary["std"],
+        alpha=0.2,
+        label="PPO ±1 std"
+    )
 
-    step_col = next((c for c in step_candidates if c in baseline_df.columns), None)
-    return_col = next((c for c in return_candidates if c in baseline_df.columns), None)
+    baseline_summary = (
+        baseline_df.groupby("env_step")["Episode_Return_smooth"]
+        .mean()
+        .reset_index()
+        .sort_values("env_step")
+    )
 
-    if step_col is None or return_col is None:
-        print("Baseline columns found:", list(baseline_df.columns))
-        raise ValueError("Could not infer baseline step/return columns.")
-
-    plt.plot(baseline_df[step_col], baseline_df[return_col], label="Baseline")
+    plt.plot(
+        baseline_summary["env_step"],
+        baseline_summary["Episode_Return_smooth"],
+        linestyle="--",
+        label="Baseline smooth"
+    )
 
     plt.xlabel("Environment steps")
     plt.ylabel("Return")
@@ -77,7 +96,6 @@ def plot_ppo_vs_baseline(raw_dir, plots_dir, baseline_path):
     os.makedirs(plots_dir, exist_ok=True)
     plt.savefig(os.path.join(plots_dir, "ppo_vs_baseline.png"), dpi=300)
     plt.close()
-
 
 def parse_args():
     parser = argparse.ArgumentParser()
